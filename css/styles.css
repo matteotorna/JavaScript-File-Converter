@@ -13,7 +13,7 @@ body {
   justify-content: center;
   flex-direction: column;
   min-height: 100vh;
-  background: #e0eafc; /* fallback for old browsers */
+  background: #e0eafc; 
   background: -webkit-linear-gradient(to right, #cfdef3, #e0eafc);
   background: linear-gradient(to right, #cfdef3, #e0eafc);
 }
@@ -913,12 +913,20 @@ h2 {
   transition: opacity 0.5s ease;
 }
 
-.csv-icon-green {
-  color: green;
+.csv-icon {
+  color: rgb(156, 20, 20);
 }
 
 .xml-icon{
 	color: rgb(0, 0, 255);
+}
+
+.excel-icon {
+  color: green;
+}
+
+.trash-icon {
+  color: #848789;
 }
 
 .hidden-icon {

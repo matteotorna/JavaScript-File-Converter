@@ -45,9 +45,10 @@ function renderFileList() {
         const convertButtonJson = createConvertButton(file, "JSON");
         const convertButtonPdf = createConvertButton(file, "PDF");
         const convertButtonCsv = createConvertButton(file, "CSV");
+        const convertButtonXlsx = createConvertButton(file, "XLSX");
 
         const removeButton = document.createElement("button");
-        removeButton.innerHTML = '<i class="fas fa-trash-alt fa-lg"></i>';
+        removeButton.innerHTML = '<i class="fas fa-trash-alt fa-lg trash-icon"></i>';
         removeButton.classList.add("file-action-button", "remove-button");
         removeButton.addEventListener("click", () => {
             files = files.filter((f) => f !== file);
@@ -59,9 +60,11 @@ function renderFileList() {
         convertButtonJson.title = "JSON";
         convertButtonPdf.title = "PDF";
         convertButtonCsv.title = "CSV";
+        convertButtonXlsx.title = "XLSX"
         removeButton.title = "Delete";
 
         fileActionButtons.appendChild(convertButtonXml);
+        fileActionButtons.appendChild(convertButtonXlsx);
         fileActionButtons.appendChild(convertButtonJson);
         fileActionButtons.appendChild(convertButtonPdf);
         fileActionButtons.appendChild(convertButtonCsv);
@@ -77,6 +80,10 @@ function renderFileList() {
             convertButtonJson.style.display = "none";
         } else if (file.extension === "csv") {
             convertButtonCsv.style.display = "none";
+        } else if (file.extension === "pdf") {
+            convertButtonPdf.style.display = "none";
+        } else if (file.extension === "xlsx") {
+            convertButtonXlsx.style.display = "none";
         }
     });
 }
@@ -103,69 +110,6 @@ function displayFile() {
 
         startProgressBar();
         showProgressBar();
-
-        let fileReader = new FileReader();
-
-        fileReader.onload = () => {
-            let fileContent = fileReader.result;
-
-            // Visualizza il contenuto del file nella console
-            console.log("Contenuto del file:");
-            console.log(fileContent);
-
-            if (fileType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-                // Gestisci i file Excel come prima
-                console.log("Stai gestendo un file Excel:");
-                console.log(fileContent); // Verifica il contenuto del file Excel
-                let workbook = XLSX.read(fileContent, { type: "binary" });
-                // Processa workbook secondo le necessità
-                console.log(workbook);
-            } else if (fileType === "application/json") {
-                // Gestisci i file JSON come prima
-                console.log("Stai gestendo un file JSON:");
-                console.log(fileContent); // Verifica il contenuto del file JSON
-                let jsonData = JSON.parse(fileContent);
-                // Processa jsonData secondo le necessità
-                console.log(jsonData);
-            } else if (fileType === "text/csv") {
-                // Gestisci i file CSV come prima
-                console.log("Stai gestendo un file CSV:");
-                console.log(fileContent); // Verifica il contenuto del file CSV
-                Papa.parse(file, {
-                    header: true,
-                    dynamicTyping: true,
-                    complete: function (results) {
-                        // I dati del CSV sono disponibili in results.data
-                        console.log(results.data);
-                    },
-                });
-            } else if (fileType === "application/xml" || fileType === "text/xml") {
-                // Gestisci i file XML
-                console.log("Stai gestendo un file XML:");
-
-                // Analizza il contenuto XML con il DOMParser
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(fileContent, "text/xml");
-
-                // Puoi ora elaborare xmlDoc secondo le necessità
-                console.log(xmlDoc);
-
-                const root = xmlDoc.documentElement;
-                console.log("Root element:", root);
-
-                // Estrarre dati dall'XML
-                const elements = root.getElementsByTagName("nome_elemento");
-                for (let i = 0; i < elements.length; i++) {
-                    console.log("Elemento " + i + ":", elements[i].textContent);
-                }
-            }
-        };
-
-        if (fileType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-            fileReader.readAsArrayBuffer(file);
-        } else {
-            fileReader.readAsText(file);
-        }
 
         addToActivityList(`File displayed: ${file.name}`);
     }
@@ -199,15 +143,8 @@ function createConvertButton(file, type) {
                     convertJsonToXml(jsonData, file.name.replace(".json", ".xml"));
                 };
                 reader.readAsText(file);
-            } else {
+            } else if (file.extension === "xlsx") {
                 convertExcelToXml(file);
-            }
-        } else if (type === "JSON") {
-            if (file.extension === "json") {
-                // If it's already JSON, you can provide a download link
-                downloadJsonFile(file, file.name);
-            } else {
-                convertExcelToJson(file);
             }
         } else if (type === "PDF") {
             if (file.extension === "json") {
@@ -217,11 +154,35 @@ function createConvertButton(file, type) {
                     convertJsonToPdf(jsonData, file.name.replace(".json", ".pdf"));
                 };
                 reader.readAsText(file);
-            } else {
+            } else if (file.extension === "xlsx") {
                 convertExcelToPdf(file);
             }
         } else if (type === "CSV") {
-            convertExcelToCsv(file);
+            if (file.extension === "json") {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const jsonData = JSON.parse(reader.result);
+                    convertJsonToCsv(jsonData);
+                };
+                reader.readAsText(file);
+            } else if (file.extension === "xlsx") {
+                convertExcelToCsv(file);
+            }
+        } else if (type === "XLSX") {
+            if (file.extension === "json") {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const jsonData = JSON.parse(reader.result);
+                    convertJsonToExcel(jsonData);
+                };
+                reader.readAsText(file);
+            }
+        } else if (type === "JSON") {
+            if (file.extension === "xlsx") {
+                convertExcelToJson(file);
+            } else if (file.extension === "xml") {
+                convertXmlToJson(file);
+            }
         }
     });
 
@@ -232,15 +193,15 @@ function createConvertButton(file, type) {
     } else if (type === "PDF") {
         convertButton.innerHTML += '<i class="far fa-file-pdf fa-lg"></i>';
     } else if (type === "CSV") {
-        convertButton.innerHTML += '<i class="fas fa-file-csv fa-lg csv-icon-green"></i>';
+        convertButton.innerHTML += '<i class="fas fa-file-csv fa-lg csv-icon"></i>';
+    } else if (type === "XLSX") {
+        convertButton.innerHTML += '<i class="fas fa-file-excel fa-lg excel-icon"></i>';
     }
 
     return convertButton;
 }
 
-
 function convertExcelToPdf(file) {
-
     const loader = document.getElementById("loader");
     loader.style.display = "block";
 
@@ -256,30 +217,29 @@ function convertExcelToPdf(file) {
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
 
-            // Crea una tabella HTML dal foglio Excel
-            const htmlTable = XLSX.utils.sheet_to_html(worksheet);
+            // Estrai dati dalla worksheet
+            const dataJson = XLSX.utils.sheet_to_json(worksheet);
 
-            // Creazione di una pagina HTML completa con la tabella
+            // Creazione di una pagina HTML ben strutturata
             const htmlContent = `
-        <html>
-          <head>
-            <style>
-              table {
-                border-collapse: collapse;
-                width: 100%;
-              }
-              th, td {
-                border: 1px solid black;
-                padding: 8px;
-                text-align: left;
-              }
-            </style>
-          </head>
-          <body>
-            ${htmlTable}
-          </body>
-        </html>
-      `;
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  margin: 20px;
+                }
+                p {
+                  color: #black;
+                }
+              </style>
+            </head>
+            <body>
+              
+              ${generateHtmlFromData(dataJson)}
+            </body>
+          </html>
+        `;
 
             // Creazione di un iframe nascosto per la stampa
             const iframe = document.createElement("iframe");
@@ -310,9 +270,20 @@ function convertExcelToPdf(file) {
         reader.readAsArrayBuffer(file);
     } catch (error) {
         alert(`Errore durante la conversione in PDF: ${error.message}`);
-
         loader.style.display = "none";
     }
+}
+
+function generateHtmlFromData(data) {
+    let html = "";
+    for (const row of data) {
+        html += "<p>";
+        for (const key in row) {
+            html += `<strong>${key}:</strong> ${row[key]}<br>`;
+        }
+        html += "</p>";
+    }
+    return html;
 }
 
 function convertExcelToXml(file) {
@@ -327,15 +298,11 @@ function convertExcelToXml(file) {
             const workbook = XLSX.read(data, { type: "array" });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-            // documento XML manualmente
             const xml = document.implementation.createDocument(null, "root");
             const root = xml.documentElement;
             root.setAttribute("xmlns", "http://www.example.com/xmlns");
             root.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-            root.setAttribute("xsi:schemaLocation", "http://www.example.com/xmlns schema.xsd");
 
             jsonData.forEach((item) => {
                 const rowElement = xml.createElement("Row");
@@ -382,7 +349,6 @@ function getValidXmlName(columnName) {
     return columnName.replace(/[^a-zA-Z0-9]/g, "");
 }
 
-
 function convertExcelToJson(file) {
 
     const loader = document.getElementById("loader");
@@ -399,7 +365,6 @@ function convertExcelToJson(file) {
 
         console.log(jsonData);
 
-        // Chiama la funzione downloadJsonFile per scaricare il JSON
         downloadJsonFile(jsonData, "output.json");
 
         loader.style.display = "none";
@@ -451,10 +416,9 @@ function convertExcelToCsv(file) {
         // Crea un URL per il Blob
         const csvBlobURL = URL.createObjectURL(csvBlob);
 
-
         const a = document.createElement("a");
         a.href = csvBlobURL;
-        a.download = file.name.replace(/\.[^.]+$/, ".csv"); // Cambia l'estensione del nome del file a .csv
+        a.download = file.name.replace(/\.[^.]+$/, ".csv");
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -506,14 +470,14 @@ function jsonToXml(json) {
     const xmlItems = json.map((item, index) => {
         const keys = Object.keys(item);
         const itemXml = keys.map((key) => {
-            const tagName = key.replace(/[^a-zA-Z_]/g, '_'); // Ensure valid XML tag name
+            const tagName = key.replace(/[^a-zA-Z_]/g, '_');
             return `<${tagName}>${item[key]}</${tagName}>`;
         }).join('');
         return `<item_${index}>${itemXml}</item_${index}>`;
     }).join('');
 
     const xml = `<?xml version="1.0" encoding="UTF-8" ?>
-<root xmlns="http://www.example.com/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.example.com/xmlns schema.xsd">
+<root xmlns="http://www.example.com/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     ${xmlItems}
 </root>`;
 
@@ -531,28 +495,28 @@ function convertJsonToPdf(file) {
             <html>
               <head>
                 <style>
-                  table {
-                    border-collapse: collapse;
-                    width: 100%;
+                  body {
+                    font-family: Arial, sans-serif;
                   }
-                  th, td {
-                    border: 1px solid black;
-                    padding: 8px;
-                    text-align: left;
+                  .item {
+                    margin-bottom: 10px;
+                  }
+                  .key {
+                    font-weight: bold;
+                    display: inline-block;
+                    width: 100px;
                   }
                 </style>
               </head>
               <body>
-                <table>
-                  <thead>
-                    <tr>
-                      ${Object.keys(jsonData[0]).map(key => `<th>${key}</th>`).join('')}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${jsonData.map(item => `<tr>${Object.values(item).map(value => `<td>${value}</td>`).join('')}</tr>`).join('')}
-                  </tbody>
-                </table>
+                ${jsonData.map(item => `
+                  <div class="item">
+                    ${Object.entries(item).map(([key, value]) => `
+                      <div class="key">${key}:</div>
+                      <div class="value">${value}</div>
+                    `).join('')}
+                  </div>
+                `).join('')}
               </body>
             </html>`;
 
@@ -581,6 +545,146 @@ function convertJsonToPdf(file) {
     }
 }
 
+function convertJsonToExcel(jsonData) {
+
+    const loader = document.getElementById("loader");
+    loader.style.display = "block";
+
+    const workbook = XLSX.utils.book_new();
+
+    const worksheet = XLSX.utils.json_to_sheet(jsonData);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Foglio1");
+
+    XLSX.writeFile(workbook, "output.xlsx");
+
+    loader.style.display = "none";
+
+    addToActivityList(`File converted to Excel: ${file.name}`);
+
+}
+
+function convertJsonToCsv(jsonData) {
+
+    const loader = document.getElementById("loader");
+    loader.style.display = "block";
+
+    const csvData = json2csv.parse(jsonData);
+
+    const csvBlob = new Blob([csvData], { type: "text/csv" });
+
+    const csvUrl = URL.createObjectURL(csvBlob);
+
+    const link = document.createElement("a");
+    link.href = csvUrl;
+    link.download = "output.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    loader.style.display = "none";
+
+    addToActivityList(`File converted to CSV: ${file.name}`);
+}
+
+function convertXmlToPdf(xml) {
+    const html = xmlToHtml(xml);
+
+    const pdfContent = `
+      <html>
+        <body> 
+          ${html}
+        </body>
+      </html>
+    `;
+
+    // Creazione di un iframe nascosto per la stampa
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
+
+    // Caricamento del contenuto HTML nell'iframe
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(pdfContent);
+    iframeDoc.close();
+
+    // Stampa la pagina HTML in un file PDF
+    iframe.focus();
+    iframe.contentWindow.print();
+
+    // Rimuovi l'iframe dopo la stampa
+    setTimeout(() => {
+        document.body.removeChild(iframe);
+
+        loader.style.display = "none";
+
+        addToActivityList("File XML convertito in PDF");
+    }, 1000);
+}
+
+function convertXmlToExcel(xml) {
+    const json = xmlToJson(xml);
+
+    convertJsonToExcel(json);
+
+    addToActivityList("File XML convertito in Excel");
+}
+
+function convertXmlToCsv(xml) {
+    const json = xmlToJson(xml);
+
+    convertJsonToCsv(json);
+
+    addToActivityList("File XML convertito in CSV");
+}
+
+function convertXmlToJson(xml) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xml, "application/xml");
+
+    const jsonObj = xmlToJsonRecurse(xmlDoc);
+
+    return JSON.stringify(jsonObj);
+}
+
+function xmlToJsonRecurse(xmlNode) {
+    const jsonNode = {};
+
+    if (xmlNode.nodeName === "#text") {
+        jsonNode.value = xmlNode.textContent;
+        return jsonNode;
+    }
+
+    jsonNode.name = xmlNode.nodeName;
+
+    xmlNode.childNodes.forEach(childNode => {
+        if (jsonNode[childNode.nodeName] === undefined) {
+            jsonNode[childNode.nodeName] = [];
+        }
+        jsonNode[childNode.nodeName].push(xmlToJsonRecurse(childNode));
+    });
+
+    return jsonNode;
+}
+
+function xmlToHtml(xml) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xml, "application/xml");
+
+    let html = `<table>`;
+
+    for (let node of xmlDoc.documentElement.childNodes) {
+        html += `<tr>`;
+        for (let childNode of node.childNodes) {
+            html += `<td>${childNode.nodeName}</td><td>${childNode.textContent}</td>`
+        }
+        html += `</tr>`;
+    }
+
+    html += `</table>`;
+
+    return html;
+}
 
 function startProgressBar() {
     let width = 0;
@@ -632,7 +736,6 @@ function resetTool() {
     container.style.backgroundColor = "";
 }
 resetButton.addEventListener("click", resetTool);
-
 
 function activateTab(tab) {
     const target = tab.dataset.target;
@@ -746,19 +849,26 @@ function handleDragAndDrop() {
     dropArea.addEventListener("drop", (event) => {
         event.preventDefault();
         const droppedFile = event.dataTransfer.files[0];
+
         if (droppedFile) {
+            const validExtensions = ["xml", "json", "xlsx", "csv"];
+            const fileExtension = droppedFile.name.split('.').pop().toLowerCase();
+            if (!validExtensions.includes(fileExtension)) {
+                alert("Formato file non valido!");
+                return;
+            }
+
             addFileToList(droppedFile);
-            file = droppedFile;  // Imposta il file globale su quello appena trascinato
-            displayFile();  
+            file = droppedFile;
+            displayFile();
         }
         dropArea.classList.remove("active");
         dragText.textContent = "Drag & Drop";
     });
-    
+
 }
 
 handleDragAndDrop();
-
 
 function toggleTheme() {
     // Controlla lo stato del checkbox per il tema del container
