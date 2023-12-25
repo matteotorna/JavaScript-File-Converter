@@ -98,7 +98,8 @@ function displayFile() {
             "application/json",
             "text/csv",
             "application/xml",
-            "text/xml"
+            "text/xml",
+            "application/pdf"
         ];
 
         if (!validExtensions.includes(fileType)) {
@@ -136,6 +137,7 @@ function createConvertButton(file, type) {
     convertButton.classList.add("convert-button");
     convertButton.addEventListener("click", () => {
         if (type === "XML") {
+
             if (file.extension === "json") {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -145,8 +147,14 @@ function createConvertButton(file, type) {
                 reader.readAsText(file);
             } else if (file.extension === "xlsx") {
                 convertExcelToXml(file);
+            } else if (file.extension === "csv") {
+                convertCsvToXml(file);
+            } else if (file.extension === "pdf") {
+                convertPdfToXml(file);
             }
+
         } else if (type === "PDF") {
+
             if (file.extension === "json") {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -156,8 +164,14 @@ function createConvertButton(file, type) {
                 reader.readAsText(file);
             } else if (file.extension === "xlsx") {
                 convertExcelToPdf(file);
+            } else if (file.extension === "xml") {
+                convertXmlToPdf(file);
+            } else if (file.extension === "csv") {
+                convertCsvToPdf(file);
             }
+
         } else if (type === "CSV") {
+
             if (file.extension === "json") {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -167,8 +181,14 @@ function createConvertButton(file, type) {
                 reader.readAsText(file);
             } else if (file.extension === "xlsx") {
                 convertExcelToCsv(file);
+            } else if (file.extension === "xml") {
+                convertXmlToCsv(file);
+            } else if (file.extension === "pdf") {
+                convertPdfToCsv(file);
             }
+
         } else if (type === "XLSX") {
+
             if (file.extension === "json") {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -176,12 +196,24 @@ function createConvertButton(file, type) {
                     convertJsonToExcel(jsonData);
                 };
                 reader.readAsText(file);
+            } else if (file.extension === "xml") {
+                convertXmlToExcel(file);
+            } else if (file.extension === "csv") {
+                convertCsvToExcel(file);
+            } else if (file.extension === "xlsx") {
+                convertPdfToExcel(file);
             }
+
         } else if (type === "JSON") {
+
             if (file.extension === "xlsx") {
                 convertExcelToJson(file);
             } else if (file.extension === "xml") {
                 convertXmlToJson(file);
+            } else if (file.extension === "csv") {
+                convertCsvToJson(file);
+            } else if (file.extension === "pdf") {
+                convertPdfToJson(file);
             }
         }
     });
@@ -623,7 +655,7 @@ function convertXmlToPdf(xml) {
 }
 
 function convertXmlToExcel(xml) {
-    const json = xmlToJson(xml);
+    const json = convertXmlToJson(xml);
 
     convertJsonToExcel(json);
 
@@ -631,7 +663,7 @@ function convertXmlToExcel(xml) {
 }
 
 function convertXmlToCsv(xml) {
-    const json = xmlToJson(xml);
+    const json = convertXmlToJson(xml);
 
     convertJsonToCsv(json);
 
@@ -684,6 +716,321 @@ function xmlToHtml(xml) {
     html += `</table>`;
 
     return html;
+}
+
+function convertCsvToJson(csvFile) {
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+        const csvData = event.target.result;
+
+        const lines = csvData.split("\n");
+
+        lines.shift();
+
+        const jsonData = [];
+
+        lines.forEach(line => {
+            const values = line.split(",");
+
+            const obj = {};
+            values.forEach((value, index) => {
+                obj[getJsonKey(index)] = value;
+            });
+
+            jsonData.push(obj);
+
+        });
+
+        downloadJsonFile(jsonData, csvFile.name.replace(/\.[^/.]+$/, ".json"));
+    };
+
+    reader.readAsText(csvFile);
+}
+
+function getJsonKey(index) {
+    return "col_" + index;
+}
+
+function convertCsvToXml(csvFile) {
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+        const csvData = event.target.result;
+
+        const lines = csvData.split("\n");
+
+        // Rimuovi intestazione
+        lines.shift();
+
+        let xmlData = `<?xml version="1.0" encoding="UTF-8"?>
+                    <root>`;
+
+        lines.forEach(line => {
+            xmlData += csvLineToXml(line);
+        });
+
+        xmlData += `</root>`;
+
+        downloadXmlFile(xmlData, csvFile.name.replace(/\.[^/.]+$/, ".xml"));
+    };
+
+    reader.readAsText(csvFile);
+}
+
+function csvLineToXml(csvLine) {
+    const values = csvLine.split(",");
+
+    let lineXml = `<row>`;
+
+    values.forEach((value, index) => {
+        lineXml += `\n <col_${index}>${value}</col_${index}>`;
+    });
+
+    lineXml += `\n</row>`;
+
+    return lineXml;
+}
+
+function convertCsvToExcel(csvFile) {
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+        const csvData = event.target.result;
+
+        const lines = csvData.split("\n");
+
+        // Rimuovi intestazione
+        lines.shift();
+
+        const jsonData = [];
+
+        lines.forEach(line => {
+            jsonData.push(csvLineToJson(line));
+        });
+
+        convertJsonToExcel(jsonData);
+    };
+
+    reader.readAsText(csvFile);
+}
+
+function csvLineToJson(csvLine) {
+    const values = csvLine.split(",");
+
+    const obj = {};
+
+    values.forEach((value, index) => {
+        obj[getJsonKey(index)] = value;
+    });
+
+    return obj;
+}
+
+function getJsonKey(index) {
+    return "col_" + index;
+}
+
+function convertCsvToPdf(csvFile) {
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+        const csvData = event.target.result;
+
+        const html = csvToHtmlTable(csvData);
+
+        // Genera PDF da HTML
+        const pdfDoc = htmlToPdf(html);
+        downloadPdfFile(pdfDoc, csvFile.name.replace(/\.[^/.]+$/, ".pdf"));
+
+    };
+
+    reader.readAsText(csvFile);
+
+}
+
+function htmlToPdf(html) {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
+
+    iframe.contentDocument.write(html);
+
+    iframe.focus();
+    iframe.contentWindow.print();
+
+    return iframe.contentDocument.body.firstElementChild;
+
+}
+
+function downloadPdfFile(pdfDoc, fileName) {
+    const pdfBlob = new Blob([pdfDoc], { type: "application/pdf" });
+
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function csvToHtmlTable(csvData) {
+
+    const lines = csvData.split("\n");
+
+    // Rimuovi intestazione
+    lines.shift();
+
+    let html = `<table>`;
+
+    lines.forEach(line => {
+        html += `\n<tr>` + csvLineToHtml(line) + `</tr>`;
+    });
+
+    html += `\n</table>`;
+
+    return html;
+}
+
+function csvLineToHtml(csvLine) {
+    const values = csvLine.split(",");
+
+    let html = "";
+    values.forEach((value, index) => {
+        html += `<td>${value}</td>`;
+    });
+
+    return html;
+}
+
+async function extractTextFromPdf(pdfFile) {
+
+    const reader = new FileReader();
+    const pdfData = await new Promise(resolve => {
+        reader.onload = () => resolve(reader.result);
+        reader.readAsArrayBuffer(pdfFile);
+    });
+
+    const pdfDoc = await pdfjsLib.getDocument(pdfData).promise;
+
+    let pdfText = '';
+
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+
+        const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
+        pdfText += textContent.items.map(item => item.str).join(' ');
+
+    }
+
+    return pdfText;
+
+}
+
+async function convertPdfToXml(pdfFile) {
+
+    const pdfText = await extractTextFromPdf(pdfFile);
+    const xml = `<pdf>${pdfText}</pdf>`;
+    downloadXml(xml);
+
+}
+
+async function convertPdfToXlsx(pdfFile) {
+
+    const pdfText = await extractTextFromPdf(pdfFile);
+    const worksheet = XLSX.utils.aoa_to_sheet([[pdfText]]);
+    XLSX.writeFile(worksheet, 'pdfData.xlsx');
+
+}
+
+async function convertPdfToCsv(pdfFile) {
+
+    const pdfText = await extractTextFromPdf(pdfFile);
+    const csv = `"${pdfText}"`;
+    downloadCsv(csv);
+
+}
+
+async function convertPdfToJson(pdfFile) {
+
+    const pdfText = await extractTextFromPdf(pdfFile);
+    const json = { text: pdfText };
+    downloadJson(json);
+
+}
+
+function downloadXml(data, filename = 'pdfdata.xml') {
+    const blob = new Blob([data], { type: 'text/xml' });
+
+    const a = document.createElement('a');
+    a.download = filename;
+    a.href = window.URL.createObjectURL(blob);
+    a.dataset.downloadurl = ['text/xml', a.download, a.href].join(':');
+
+    const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: false,
+        view: window
+    });
+
+    a.dispatchEvent(clickEvent);
+}
+
+function downloadXlsx(data, filename = 'pdfdata.xlsx') {
+
+    const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+}
+
+function downloadCsv(data, filename = 'pdfdata.csv') {
+
+    const blob = new Blob([data], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+}
+
+function downloadJson(data, filename = 'pdfdata.json') {
+
+    const json = JSON.stringify(data);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
 }
 
 function startProgressBar() {
@@ -851,7 +1198,7 @@ function handleDragAndDrop() {
         const droppedFile = event.dataTransfer.files[0];
 
         if (droppedFile) {
-            const validExtensions = ["xml", "json", "xlsx", "csv"];
+            const validExtensions = ["xml", "json", "xlsx", "csv", "pdf"];
             const fileExtension = droppedFile.name.split('.').pop().toLowerCase();
             if (!validExtensions.includes(fileExtension)) {
                 alert("Formato file non valido!");
