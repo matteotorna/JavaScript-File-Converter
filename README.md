@@ -5,7 +5,7 @@
 </div>
 
 <p align="center">
-  Effortlessly convert files into various formats such as Json, Xml, Pdf, Excel, and Csv with our powerful web application.
+  Effortlessly convert files into various formats such as Json, Xml, Pdf, Excel, and Csv with this web application.
 </p>
 
 <div align="center">
