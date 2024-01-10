@@ -16,6 +16,8 @@ const progressContainer = document.querySelector(".progress-container");
 const tooltip = deleteAllButton.querySelector(".tooltiptext");
 const tooltipButtons = document.querySelectorAll(".tooltip-button");
 
+const maxFileNameLength = 20;
+
 let files = [];
 let file;
 
@@ -36,7 +38,7 @@ function renderFileList() {
 
     files.forEach((file) => {
         const listItem = document.createElement("li");
-        listItem.textContent = `${file.name} - ${(file.size / 1024).toFixed(2)} KB`;
+        listItem.textContent = `${file.name.substring(0, maxFileNameLength)}${file.name.length > maxFileNameLength ? '...' : ''} - ${(file.size / 1024).toFixed(2)} KB`;
 
         const fileActionButtons = document.createElement("div");
         fileActionButtons.classList.add("file-action-buttons");
